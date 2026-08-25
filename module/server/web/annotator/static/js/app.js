@@ -2007,7 +2007,8 @@
         state.sourceDirs = preferredDirs.slice(0, depth);
         state.currentDirPath = joinPath(state.sourceDirs);
         state.sourceLeafHasDirs = dirs.length > 0 && !selectedDir;
-        state.sourceLeafJsonFiles = state.sourceLeafHasDirs ? [] : (Array.isArray(data.json_files) ? data.json_files : []);
+        // 当前层即便还有子目录，只要本身有 JSON 文件也允许下拉，避免混合层（同时含子目录与 JSON）隐藏规则文件
+        state.sourceLeafJsonFiles = Array.isArray(data.json_files) ? data.json_files : [];
         break;
       }
 
@@ -2017,7 +2018,7 @@
       depth += 1;
     }
 
-    if (!state.sourceLeafHasDirs) {
+    if (state.sourceLeafJsonFiles.length > 0) {
       if (state.sourceDirs.length > 0) {
         const sep = document.createElement("span");
         sep.className = "breadcrumb-sep";
