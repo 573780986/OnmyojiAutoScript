@@ -511,6 +511,11 @@ class Script:
             self.run("Restart")
             return True
 
+        # 等待期间先确保游戏在运行, 防止 GotoMain 抛 GameNotRunningError 后
+        # task_call('Restart') 被 Skip first restart 拦截导致游戏永远不启动
+        if not self.device.app_is_running():
+            logger.info("Game not running during wait, run Restart first")
+            self.run("Restart")
         logger.info("Goto main page during wait")
         self.run("GotoMain")
         self.device.release_during_wait()
