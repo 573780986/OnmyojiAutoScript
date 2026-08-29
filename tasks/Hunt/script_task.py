@@ -28,16 +28,31 @@ class ScriptTask(GameUi, GeneralBattle, GeneralInvite, SwitchSoul, HuntAssets):
             # 设置下次运行时间 为今天的晚上七点钟
             raise TaskEnd('Hunt')
         con = self.config.hunt.hunt_config
-        if con.kirin_group_team != '-1,-1' or con.netherworld_group_team != '-1,-1':
+        # 根据今日类型（麒麟 / 阴界之门）选择对应的御魂切换配置
+        if self.kirin_day:
+            soul_enable = con.kirin_enable
+            soul_group_team = con.kirin_group_team
+            soul_enable_by_name = con.kirin_enable_switch_by_name
+            soul_group_name = con.kirin_group_name
+            soul_team_name = con.kirin_team_name
+        else:
+            soul_enable = con.netherworld_enable
+            soul_group_team = con.netherworld_group_team
+            soul_enable_by_name = con.netherworld_enable_switch_by_name
+            soul_group_name = con.netherworld_group_name
+            soul_team_name = con.netherworld_team_name
+
+        # 御魂切换方式一：按预设编号切换
+        if soul_enable and soul_group_team != '-1,-1':
             self.ui_get_current_page()
             self.ui_goto(page_shikigami_records)
+            self.run_switch_soul(soul_group_team)
 
-            if self.kirin_day:
-                if con.kirin_group_team != '-1,-1':
-                    self.run_switch_soul(con.kirin_group_team)
-            else:
-                if con.netherworld_group_team != '-1,-1':
-                    self.run_switch_soul(con.netherworld_group_team)
+        # 御魂切换方式二：按 OCR 分组/队伍名切换
+        if soul_enable_by_name and soul_group_name and soul_team_name:
+            self.ui_get_current_page()
+            self.ui_goto(page_shikigami_records)
+            self.run_switch_soul_by_name(soul_group_name, soul_team_name)
         self.ui_get_current_page()
         if self.kirin_day:
             self.ui_goto(page_hunt_kirin)
