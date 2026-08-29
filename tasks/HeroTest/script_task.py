@@ -2,8 +2,9 @@
 # @author runhey
 # github https://github.com/runhey
 from datetime import datetime, timedelta, time
-import random  # type: ignore
+import random
 from typing import Callable
+from time import sleep
 
 from module.logger import logger
 from module.exception import TaskEnd
@@ -105,10 +106,17 @@ class ScriptTask(GameUi, GeneralBattle, HeroTestAssets, SwitchSoul):
                 win = True
                 continue
             if self.appear(self.I_WIN, interval=1.2) or \
-                    self.appear(self.I_DE_WIN, interval=1.2) or \
-                    self.appear(self.I_REWARD, interval=1.2):
+                    self.appear(self.I_DE_WIN, interval=1.2):
                 win = True
+                sleep(random.randint(3, 6) / 10)
                 self.click(pages.random_click(ltrb=(False, True, True, False)))
+                logger.info("Battle win")
+                continue
+            if self.appear(self.I_REWARD, interval=1.2):
+                sleep(random.randint(6, 9) / 10)
+                self.click(pages.random_click(ltrb=(False, True, True, False)))
+                logger.info("Battle reward")
+                sleep(random.randint(8, 18) / 10)
                 continue
             if self.appear(self.I_FALSE, interval=1.5):
                 win = False
