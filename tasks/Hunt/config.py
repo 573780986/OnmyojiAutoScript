@@ -16,8 +16,20 @@ class HuntTime(ConfigBase):
 
 
 class HuntConfig(BaseModel):
+    # 麒麟御魂切换（按预设编号）
+    kirin_enable: bool = Field(default=False)
     kirin_group_team: str = Field(default='-1,-1', description='switch_group_team_help')
+    # 麒麟御魂切换（按 OCR 分组/队伍名）
+    kirin_enable_switch_by_name: bool = Field(default=False, description='enable_switch_by_name_help')
+    kirin_group_name: str = Field(default='')
+    kirin_team_name: str = Field(default='')
+    # 阴界之门御魂切换（按预设编号）
+    netherworld_enable: bool = Field(default=False)
     netherworld_group_team: str = Field(default='-1,-1')
+    # 阴界之门御魂切换（按 OCR 分组/队伍名）
+    netherworld_enable_switch_by_name: bool = Field(default=False, description='enable_switch_by_name_help')
+    netherworld_group_name: str = Field(default='')
+    netherworld_team_name: str = Field(default='')
 
 
 class HuntGeneralBattleConfig(GeneralBattleConfig):
