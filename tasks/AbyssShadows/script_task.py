@@ -88,6 +88,64 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, AbyssShadowsAssets):
     general_fight_count = 0  # 副将战斗次数
     elite_fight_count = 0  # 精英战斗次数
     
+    def _plan_next_run(self, cfg: AbyssShadows) -> None:
+        """
+        按当前时间算出下一个 AbyssShadows 设置点。
+        开放日: 周五(4) / 周六(5) / 周日(6)。
+
+        - 今天在 [4,5,6] 内 且 custom_time 未到 -> 今天的 custom_time
+        - 今天在 [4,5,6] 内 且 custom_time 已过 -> 下一个开放日的 custom_time
+        - 今天不在 [4,5,6] 内                   -> 本周五（或下周五）的 friday 时间
+        """
+        now = datetime.now()
+        today = now.weekday()
+
+        # 先确定"今天的 custom_time"和"下一个开放日的 (custom_time, delta)"
+        if today == 4:
+            today_time = cfg.abyss_shadows_time.custom_run_time_friday
+            next_time, next_delta, next_weekday = (
+                cfg.abyss_shadows_time.custom_run_time_saturday, 1, 5)
+        elif today == 5:
+            today_time = cfg.abyss_shadows_time.custom_run_time_saturday
+            next_time, next_delta, next_weekday = (
+                cfg.abyss_shadows_time.custom_run_time_sunday, 1, 6)
+        elif today == 6:
+            today_time = cfg.abyss_shadows_time.custom_run_time_sunday
+            next_time, next_delta, next_weekday = (
+                cfg.abyss_shadows_time.custom_run_time_friday, 5, 4)
+        else:
+            # 非开放日（虽然任务本身会在 `today not in [4,5,6]` 早退，但 helper 也兜底处理）
+            delta = (4 - today) % 7
+            target_time = cfg.abyss_shadows_time.custom_run_time_friday
+            target_dt = (now + timedelta(days=delta)).replace(
+                hour=target_time.hour, minute=target_time.minute,
+                second=target_time.second, microsecond=0)
+            logger.info(
+                f"Plan next abyss shadows run: today={today} -> "
+                f"+{delta}d (Fri) @ {target_time.hour:02d}:{target_time.minute:02d}"
+            )
+            self.set_next_run(task='AbyssShadows', target=target_dt)
+            return
+
+        # 开放日：判断今天 custom_time 是否已过
+        today_target = now.replace(
+            hour=today_time.hour, minute=today_time.minute,
+            second=today_time.second, microsecond=0)
+        if now < today_target:
+            target_dt = today_target
+            log_when = f"today ({today})"
+        else:
+            target_dt = (now + timedelta(days=next_delta)).replace(
+                hour=next_time.hour, minute=next_time.minute,
+                second=next_time.second, microsecond=0)
+            log_when = f"+{next_delta}d (weekday={next_weekday})"
+
+        logger.info(
+            f"Plan next abyss shadows run: today={today} -> {log_when} @ "
+            f"{target_dt.hour:02d}:{target_dt.minute:02d}:{target_dt.second:02d}"
+        )
+        self.set_next_run(task='AbyssShadows', target=target_dt)
+
     def run(self):
         """ 狭间暗域主函数
 
@@ -107,7 +165,7 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, AbyssShadowsAssets):
         if today not in [4, 5, 6]:
             logger.info(f"Today is not abyss shadows day, exit")
             # 设置下次运行时间为本周五
-            self.custom_next_run(task='AbyssShadows', custom_time=cfg.abyss_shadows_time.custom_run_time_friday, time_delta=4-today)
+            self._plan_next_run(cfg)
             raise TaskEnd
         success = True
         # 进入狭间
@@ -116,7 +174,8 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, AbyssShadowsAssets):
         if not self.select_boss(AreaType.DRAGON):
             logger.warning("Failed to enter abyss shadows")
             self.goto_main()
-            self.set_next_run(task='AbyssShadows', finish=False, server=True, success=False)
+            # 失败也按下一个开放日安排，避免退化到"任务开始时间 + 24h"
+            self._plan_next_run(cfg)
             raise TaskEnd
         
         # 等待可进攻时间  
@@ -199,22 +258,9 @@ class ScriptTask(GeneralBattle, GameUi, SwitchSoul, AbyssShadowsAssets):
         self.goto_main()
 
         # 设置下次运行时间
-        if success:
-            print("我要重新设置时间了")
-            if today == 4:
-                # 周五推迟到周六
-                logger.info(f"The next abyss shadows day is Saturday")
-                self.custom_next_run(task='AbyssShadows', custom_time=cfg.abyss_shadows_time.custom_run_time_saturday, time_delta=1)
-            elif today == 5:
-                # 周六推迟到周日
-                logger.info(f"The next abyss shadows day is Sunday")
-                self.custom_next_run(task='AbyssShadows', custom_time=cfg.abyss_shadows_time.custom_run_time_sunday, time_delta=1)
-            elif today == 6:
-                # 周日推迟到下周五
-                logger.info(f"The next abyss shadows day is Friday")
-                self.custom_next_run(task='AbyssShadows', custom_time=cfg.abyss_shadows_time.custom_run_time_friday, time_delta=5)
-        else:
-            self.set_next_run(task='AbyssShadows', finish=True, server=True, success=False)
+        if not success:
+            logger.warning("Abyss shadows finished without success, still scheduling next open day")
+        self._plan_next_run(cfg)
         raise TaskEnd
 
 
