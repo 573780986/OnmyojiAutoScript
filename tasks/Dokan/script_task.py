@@ -61,12 +61,10 @@ class ScriptTask(ExtendGreenMark, GameUi, SwitchSoul, DokanSceneDetector):
         # 攻击优先顺序
         attack_priority: int = cfg.dokan_config.dokan_attack_priority
 
-        # 周几检测
-        if cfg.dokan_config.monday_to_thursday:
-            if datetime.now().weekday() >= 4:
-                logger.warning("weekend, exit")
-                self.next_run(True)
-                return
+        # 周几检测: Mon-Thu 模式时周五/六/日不进道馆, 由 next_run() 排到下周一
+        if cfg.dokan_config.monday_to_thursday and datetime.now().weekday() >= 4:
+            self.next_run()
+            return
 
         # # 自动换御魂
         # if cfg.switch_soul_config.enable:
@@ -307,7 +305,7 @@ class ScriptTask(ExtendGreenMark, GameUi, SwitchSoul, DokanSceneDetector):
         # 保持好习惯，一个任务结束了就返回到庭院，方便下一任务的开始
         self.goto_main()
 
-        self.next_run(skip_today=False, is_dokan_activated=is_dokan_activated)
+        self.next_run(is_dokan_activated=is_dokan_activated)
         raise TaskEnd
 
     def dokan_battle_1(self, cfg: Dokan, count=None):
@@ -911,23 +909,30 @@ class ScriptTask(ExtendGreenMark, GameUi, SwitchSoul, DokanSceneDetector):
         from tasks.GameUi.assets import GameUiAssets as gua
         self.ui_click_until_disappear(gua.I_BACK_Y, interval=2)
 
-    def next_run(self, skip_today=False, is_dokan_activated=False):
+    def next_run(self, is_dokan_activated=False):
         """
             设置下次运行时间
             该函数假定道馆时间设置为:每天固定时间尝试开启(例如:19:00),成功后设置为明天固定时间(例如19:00)
                                 失败则在短时间(例如:2分钟)内再次尝试开启道馆任务
             此假定应该符合绝大多数人需求,如果存在其他需求,,,help yourself
 
-        @param skip_today: 是否跳过今天,True->当作当天的道馆已成功打掉,False->无效
-                            为了跳过周五->周天
-        @type skip_today: bool
         @param is_dokan_activated:
         @type is_dokan_activated: bool
         @return:
         @rtype:
         """
-        if skip_today:
-            self.set_next_run(task="Dokan", finish=False, success=True, server=True)
+        # monday_to_thursday 开启时, 周四及之后不走 +1day, 直接跳到下周一 server_update
+        cfg = self.config.dokan
+        if cfg.dokan_config.monday_to_thursday and datetime.now().weekday() >= 3:
+            now = datetime.now()
+            days_to_monday = (7 - now.weekday()) % 7
+            target = (now + timedelta(days=days_to_monday)).replace(
+                hour=cfg.scheduler.server_update.hour,
+                minute=cfg.scheduler.server_update.minute,
+                second=cfg.scheduler.server_update.second,
+                microsecond=0)
+            logger.info(f"Dokan monday_to_thursday enabled, skip to next Monday {target}")
+            self.set_next_run(task="Dokan", target=target, server=False)
             return
         # 道馆没有开启
         now = datetime.now()
