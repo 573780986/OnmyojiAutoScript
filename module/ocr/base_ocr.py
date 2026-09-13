@@ -58,6 +58,12 @@ class BaseCor:
     area: list = []  # [x, y, width, height]
     keyword: str = ""  # 默认为空
 
+    # 灰度开关：是否在 ocr_single_line 中对图像 pad 到 32 对齐正方形（enlarge_canvas）。
+    # 默认 False 保持历史行为；任务可按需 opt-in：
+    #     some_rule_ocr.enlarge_single = True
+    # 注意：开启后字符串内容可能微变，硬字符串匹配的任务需自行验证。
+    enlarge_single: bool = False
+
 
     def __init__(self,
                  name: str,
@@ -156,6 +162,8 @@ class BaseCor:
         start_time = time.time()
         image = self.crop(image, self.roi)
         image = self.pre_process(image)
+        if self.enlarge_single:
+            image = enlarge_canvas(image)
         # ocr
         result, score = self.model.ocr_single_line(image)
         contains_digit = any(char.isdigit() for char in result)
