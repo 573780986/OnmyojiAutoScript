@@ -8,6 +8,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 from datetime import datetime
 from module.config.utils import convert_to_underscore
 
+from module.config.config import Config
 from module.logger import logger
 from module.server.main_manager import mm
 from module.server.script_process import ScriptProcess, ScriptState
@@ -16,6 +17,19 @@ from tasks.Component.config_base import TimeDelta
 
 
 script_app = APIRouter()
+
+
+def refresh_schedule(config: Config, running_override: dict | None = None) -> dict:
+    """
+    刷新调度快照，供前端渲染 pending / waiting 列表。
+    这里只能调 update_scheduler：get_next 在没有可执行任务时会抛 RequestHumanTakeover，
+    那是脚本进程内部的控制流信号，抛到 HTTP 层会变成 500。
+    :param config: 目标配置
+    :param running_override: 当前正在跑的任务，None 或空 dict 都视为脚本没在跑
+    :return: schedule 快照
+    """
+    config.update_scheduler()
+    return config.get_schedule_data(running_override=running_override)
 
 
 @script_app.get('/test')
@@ -152,7 +166,15 @@ async def script_task(script_name: str, task: str, group: str, argument: str, ty
     except Exception as e:
         # 类型不正确
         raise HTTPException(status_code=400, detail=f'Argument type error: {e}')
-    return mm.config_cache(script_name).model.script_set_arg(task, group, argument, value)
+    result = mm.config_cache(script_name).model.script_set_arg(task, group, argument, value)
+
+    # 配置变更后立刻推一次最新 schedule，让前端 Overview 实时反映
+    script_process = mm.script_process[script_name]
+    config = mm.config_cache(script_name)
+    await script_process.broadcast_state(
+        {"schedule": refresh_schedule(config, running_override=script_process.last_running)})
+
+    return result
 
 
 @script_app.put('/{script_name}/{task}/sync_next_run')
@@ -163,8 +185,8 @@ async def sync_next_run(script_name: str, task: str, target_dt: str):
     target = datetime.strptime(target_dt, '%Y-%m-%d %H:%M:%S') if target_dt else None
     config.task_delay(task=task, success=True, target=target)
     script_process = mm.script_process[script_name]
-    config.get_next()
-    await script_process.broadcast_state({"schedule": config.get_schedule_data()})
+    await script_process.broadcast_state(
+        {"schedule": refresh_schedule(config, running_override=script_process.last_running)})
     return True
 
 
@@ -211,8 +233,7 @@ async def websocket_endpoint(websocket: WebSocket, script_name: str):
     try:
         await script_process.send_json(websocket, {"state": script_process.state})
         config = mm.config_cache(script_name)
-        config.get_next()
-        await script_process.send_json(websocket, {"schedule": config.get_schedule_data()})
+        await script_process.send_json(websocket, {"schedule": refresh_schedule(config)})
 
         while True:
             # 初次进入，广播state schedule
@@ -221,8 +242,7 @@ async def websocket_endpoint(websocket: WebSocket, script_name: str):
                 await script_process.broadcast_state({"state": script_process.state})
             elif data == 'get_schedule':
                 config = mm.config_cache(script_name)
-                config.get_next()
-                await script_process.broadcast_state({"schedule": config.get_schedule_data()})
+                await script_process.broadcast_state({"schedule": refresh_schedule(config)})
             elif data == 'start':
                 await script_process.start()
             elif data == 'stop':

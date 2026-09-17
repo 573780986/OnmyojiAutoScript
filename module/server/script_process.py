@@ -31,6 +31,8 @@ class ScriptProcess(ScriptWSManager):
         self.state_queue = multiprocessing.Queue()
         self.state: ScriptState = ScriptState.INACTIVE
         self._process = None
+        # 最近一次从子进程拿到的 running。配置变更推送 schedule 时复用。
+        self.last_running: dict = {}
 
     async def start(self):
         self.state = ScriptState.RUNNING
@@ -50,6 +52,8 @@ class ScriptProcess(ScriptWSManager):
     async def stop(self):
         self.state = ScriptState.INACTIVE
         await self.broadcast_state({"state": self.state})
+        # 脚本已停，清缓存避免后续推送带陈旧任务名。
+        self.last_running = {}
         if self._process is None:
             logger.warning(f'Script {self.config_name} process is removed')
             return
@@ -67,6 +71,9 @@ class ScriptProcess(ScriptWSManager):
         try:
             while 1:
                 if self.state == ScriptState.INACTIVE:
+                    # 子进程异常退出没走 stop() 时，兜底清掉 last_running，
+                    # 避免后续推送 schedule 时显示陈旧任务名。
+                    self.last_running = {}
                     await sleep(1)
                     continue
                 await sleep(0.1)
@@ -80,6 +87,11 @@ class ScriptProcess(ScriptWSManager):
                         continue
                     if 'state' in data and data['state'] == ScriptState.WARNING:
                         self.state = ScriptState.WARNING
+                    # 顺手缓存子进程推上来的 running，供配置变更推送 schedule 时复用。
+                    if isinstance(data, dict) and isinstance(data.get('schedule'), dict):
+                        running = data['schedule'].get('running')
+                        if isinstance(running, dict):
+                            self.last_running = running
                     await self.broadcast_state(data)
                 except QueueEmpty as e:
                     logger.warning(f'QueueEmpty: {e}')
