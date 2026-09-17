@@ -329,7 +329,12 @@ class Script:
             task = self.config.get_next()
             self.config.task = task
             if self.state_queue:
-                self.state_queue.put({"schedule": self.config.get_schedule_data()})
+                # 当前正在跑的任务是 self.config.task，由它构造 running 给前端展示。
+                running = {}
+                if task is not None and task.next_run < datetime.now():
+                    running = {"name": task.command, "next_run": str(task.next_run)}
+                self.state_queue.put(
+                    {"schedule": self.config.get_schedule_data(running_override=running)})
             now = datetime.now()
             antiban_wake = self.anti_ban_guard.wake_time(now, self.config.script.anti_ban)
             if antiban_wake is not None:

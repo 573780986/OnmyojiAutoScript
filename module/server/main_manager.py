@@ -88,16 +88,27 @@ class MainManager(ConfigManager):
                 # 如果 已经存在了 对应的协程 跳过
                 # 如果这个进程异常/运行中 那这个协程也应该存在
                 # logger.info(f'检测脚本的process: {name}')
-                if script_p.state == ScriptState.INACTIVE:
-                    continue
-                coroutine_state_name = f'coroutine_state_{name}'
-                if coroutine_state_name not in tasks:
-                    tasks[coroutine_state_name] = asyncio.create_task(script_p.coroutine_broadcast_state(),
-                                                                      name=coroutine_state_name)
-                coroutine_log_name = f'coroutine_log_{name}'
-                if coroutine_log_name not in tasks:
-                    tasks[coroutine_log_name] = asyncio.create_task(script_p.coroutine_broadcast_log(),
-                                                                    name=coroutine_log_name)
+                if script_p.state != ScriptState.INACTIVE:
+                    coroutine_state_name = f'coroutine_state_{name}'
+                    if coroutine_state_name not in tasks:
+                        tasks[coroutine_state_name] = asyncio.create_task(script_p.coroutine_broadcast_state(),
+                                                                          name=coroutine_state_name)
+                    coroutine_log_name = f'coroutine_log_{name}'
+                    if coroutine_log_name not in tasks:
+                        tasks[coroutine_log_name] = asyncio.create_task(script_p.coroutine_broadcast_log(),
+                                                                        name=coroutine_log_name)
+                # 脚本 INACTIVE 时每 3s 推一次 schedule 给当前 ws 连接（script.py 主循环
+                # 此时不工作，前端看不到 waiting 列表更新）。RUNNING 时由
+                # script.py 主循环自己推，这里跳过避免重复。
+                if script_p.state == ScriptState.INACTIVE and script_p.active_connections:
+                    try:
+                        config = self.config_cache(name)
+                        # update_scheduler 不会触发执行、无 RequestHumanTakeover 风险
+                        config.update_scheduler()
+                        await script_p.broadcast_state(
+                            {"schedule": config.get_schedule_data()})
+                    except Exception as e:
+                        logger.error(f'{name} schedule broadcast error: {e}')
 
     async def restart_processes(self, script_instances: list[str]):
         for instance in script_instances:

@@ -241,19 +241,22 @@ class Config(ConfigState, ConfigManual, ConfigWatcher, ConfigMenu):
             logger.critical("Please enable at least one task")
             raise RequestHumanTakeover
 
-    def get_schedule_data(self) -> dict[str, dict]:
+    def get_schedule_data(self, running_override: dict | None = None) -> dict[str, dict]:
         """
-        获取调度器的数据， 但是你必须使用update_scheduler来更新信息
-        :return:
+        取调度器的 running / pending / waiting 三段任务快照。
+        调用前需先 update_scheduler，否则 pending_task / waiting_task 还是旧值。
+        :param running_override: 当前正在跑的任务。脚本是多进程的，Config
+            实例拿不到子进程里脚本当前任务，只能由调用方注入；None 或空 dict
+            都视为脚本没在跑。
+        :return: {"running": ..., "pending": [...], "waiting": [...]}
         """
-        # 根据调度器更新时间来判断是否有可运行的任务,保证逻辑一致性
-        scheduler_update_dt = getattr(self, 'scheduler_update_dt', datetime.now())
-        running = {}
-        if self.task is not None and self.task.next_run < scheduler_update_dt:
-            running = {"name": self.task.command, "next_run": str(self.task.next_run)}
+        running = running_override if running_override is not None else {}
 
+        # pending_task[0] 在脚本运行时就是 running，要跳过避免重复；
+        # 闲置时 [0] 还没人接手，必须留在 pending 里让前端看见 ready 任务。
+        start = 1 if running else 0
         pending = []
-        for p in self.pending_task[1:]:
+        for p in self.pending_task[start:]:
             item = {"name": p.command, "next_run": str(p.next_run)}
             pending.append(item)
 
