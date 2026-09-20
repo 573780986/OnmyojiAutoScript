@@ -36,4 +36,6 @@ class Optimization(BaseModel):
     queue_mode: bool = Field(default=False, description='queue_mode_help')
     # 释放执行权的空闲阈值（分钟），仅 queue_mode=True 时生效
     queue_idle_threshold: int = Field(default=10, description='queue_idle_threshold_help')
+    # 任务完成后，若本地日历日内已无任务可跑则自动退出脚本循环
+    auto_stop_when_day_done: bool = Field(default=False, description='auto_stop_when_day_done_help')
 

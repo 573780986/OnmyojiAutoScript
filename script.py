@@ -28,6 +28,7 @@ from multiprocessing.queues import Queue
 
 from module.config.utils import convert_to_underscore
 from module.config.config import Config
+from module.server.script_process import ScriptState
 from module.config.config_model import ConfigModel
 from module.config.instance_guard import InstanceGuard
 from module.config.anti_ban import AntiBanGuard
@@ -349,6 +350,17 @@ class Script:
             if not self._handle_wait_during_idle(task.next_run):
                 # 若等待被打断, 则刷新配置
                 del_cached_property(self, "config")
+
+    def _no_more_task_today(self) -> bool:
+        """今天已无任务可跑：队列为空，或所有 next_run 都已跨过本地明日 0 点。"""
+        del_cached_property(self, 'config')
+        self.config.get_next()  # 触发 update_scheduler 刷新 pending_task / waiting_task
+        tasks = list(self.config.pending_task[1:]) + list(self.config.waiting_task)
+        if not tasks:
+            return True
+        tomorrow_start = (datetime.now() + timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        return all(t.next_run >= tomorrow_start for t in tasks)
 
     def _try_acquire_queue_token(self) -> bool:
         """
@@ -727,6 +739,12 @@ class Script:
                 exit(1)
 
             if success:
+                if (self.config.script.optimization.auto_stop_when_day_done
+                        and self._no_more_task_today()):
+                    logger.info('No more tasks today, exiting loop per auto_stop_when_day_done')
+                    if self.state_queue is not None:
+                        self.state_queue.put({"state": ScriptState.INACTIVE})
+                    return
                 del_cached_property(self, 'config')
                 continue
             elif self.config.script.error.handle_error:

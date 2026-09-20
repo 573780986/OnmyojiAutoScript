@@ -30,7 +30,8 @@
       "when_task_queue_empty": "goto_main",
       "schedule_rule": "Filter",
       "queue_mode": false,
-      "queue_idle_threshold": 10
+      "queue_idle_threshold": 10,
+      "auto_stop_when_day_done": false
     }
   },
   "restart": {
