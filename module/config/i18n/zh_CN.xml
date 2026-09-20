@@ -335,6 +335,7 @@ window_background >>> DroidCast_raw >  ADB_nc >> DroidCast > uiautomator2 ~= ADB
 	<message><source>combat_screenshot_interval_help</source><translation>执行两次截图之间的最小间隔，限制在 0.1 ~ 1.0，能降低战斗时的 CPU 占用</translation></message>
 	<message><source>task_hoarding_duration_help</source><translation>能在收菜期间降低操作游戏的频率,任务触发后，等待 X 分钟，再一次性执行囤积的任务</translation></message>
 	<message><source>when_task_queue_empty_help</source><translation>无任务时关闭游戏，能在收菜期间降低 CPU 占用，'goto_home'不可选，这项是为了兼容老代码</translation></message>
+	<message><source>auto_stop_when_day_done_help</source><translation>任务执行成功后，若本地日历日内已无任务可跑则自动退出脚本循环。默认关闭</translation></message>
 </context>
 <context>
     <name>Args</name>

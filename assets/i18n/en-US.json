@@ -1,3 +1,8 @@
 {
-
+  "queue_mode": "Queue Mode",
+  "queue_mode_help": "Queue multiple instances to run tasks sequentially, avoiding simultaneous load on the game server",
+  "queue_idle_threshold": "Queue Idle Threshold (minutes)",
+  "queue_idle_threshold_help": "Idle time before releasing the execution token; only active when queue_mode=True",
+  "auto_stop_when_day_done": "Auto Stop When Day Done",
+  "auto_stop_when_day_done_help": "After a task completes, automatically exit the script loop if no more tasks are scheduled within the current local calendar day. Off by default"
 }
