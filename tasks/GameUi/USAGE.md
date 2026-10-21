@@ -161,6 +161,9 @@ page_event.add_enter_success_hooks(
   顺序执行多个动作
 - `conditional_action(condition, action)`
   只有条件命中时才执行动作
+- 直接传列表 `[action_a, action_b]`
+  候补按钮：首个命中即停，后续按钮只在前一个没出现时兜底；成败只看首个。
+  需要两个动作都执行时用 `sequence(...)`
 
 ## 页面分类规则
 

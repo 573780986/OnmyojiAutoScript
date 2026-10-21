@@ -323,11 +323,15 @@ class GameUi(BaseTask, GameUiAssets):
             return any(results)
 
         if isinstance(action, (list, tuple)):
-            return self._execute_action(
-                ActionSequence(tuple(action)),
-                interval=interval,
-                skip_first_screenshot=skip_first_screenshot,
-            )
+            # 列表是候补按钮: 首个命中就停, 后续按钮只在前一个没出现时兜底, 不决定这次跳转成不成功
+            if not action:
+                return False
+            first, *fallbacks = action
+            if self._execute_action(first, interval=interval, skip_first_screenshot=skip_first_screenshot):
+                return True
+            for fallback in fallbacks:
+                self._execute_action(fallback, interval=interval, skip_first_screenshot=False)
+            return False
 
         if callable(action) and not isinstance(action, (RuleImage, RuleGif, RuleOcr, RuleList, RuleClick)):
             result = self._invoke_callable(action)
