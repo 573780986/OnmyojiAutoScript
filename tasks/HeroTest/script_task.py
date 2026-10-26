@@ -68,15 +68,16 @@ class ScriptTask(GameUi, GeneralBattle, HeroTestAssets, SwitchSoul):
         """
         logger.info("Click battle")
         click_cnt, max_click = 0, random.randint(3, 4)
+        RESET_CONFIRM = self.I_BCMJ_RESET_CONFIRM if self.conf.herotest.layer == Layer.MIJING else self.I_MXMJ_RESET_CONFIRM
         while True:
             self.screenshot()
             if self.is_in_battle(False):
                 return True  # 成功进入战斗
             if click_cnt >= max_click:  # 异常情况,怎么都无法进入
                 break
-            if self.appear_then_click(self.I_START_CHALLENGE, interval=1):  # 兵藏秘境确认挑战
+            if self.appear_then_click(self.I_START_CHALLENGE, interval=1):  # 点击"开始挑战"
                 continue
-            if self.appear_then_click(self.I_BCMJ_RESET_CONFIRM, interval=1):  # 兵藏秘境确认重置
+            if self.appear_then_click(RESET_CONFIRM, interval=1):  # 点击"确认重置"
                 continue
             if self.appear(self.I_REAL_MONEY, interval=1):  # 这里因为门票不够而不是其他异常所以success默认还是true
                 logger.warning('Ticket is not enough')
@@ -174,8 +175,15 @@ class ScriptTask(GameUi, GeneralBattle, HeroTestAssets, SwitchSoul):
             self.I_HERO2_SKILL5,  # 敛神祝福
             self.I_HERO2_SKILL6,  # 速度祝福
         ]
-        # TODO: PVP
-        pvp_skill = []
+        # pvp技能列表, 按优先级顺序
+        pvp_skill = [
+            self.I_HERO2_POZHENZOUQU_FANYIN,        # 破阵奏曲·泛音
+            self.I_HERO2_SHENNIAOJINGXIAN_EYUN,     # 神鸟惊弦·遏云
+            self.I_HERO2_SHENNIAOJINGXIAN_ZHUKONG,  # 神鸟惊弦·逐空
+            self.I_HERO2_POZHENZOUQU_NINGXIAO,      # 破阵奏曲·凝啸
+            self.I_HERO2_YUYINRUMENG_YINJI,         # 余音入梦·音迹
+            self.I_HERO2_SKILL6,                    # 速度祝福
+        ]
         target_skill_dict: dict[SkillMode, list] = {
             SkillMode.PVE: pve_skill,
             SkillMode.PVP: pvp_skill,

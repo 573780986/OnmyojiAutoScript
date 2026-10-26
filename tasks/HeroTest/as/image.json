@@ -304,5 +304,14 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "真钱"
+  },
+  {
+    "itemName": "mxmj_reset_confirm",
+    "imageName": "as_mxmj_reset_confirm.png",
+    "roiFront": "668,411,172,56",
+    "roiBack": "664,402,180,70",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "通过梦墟秘境确认重置按钮"
   }
 ]

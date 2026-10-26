@@ -52,5 +52,50 @@
     "method": "Template matching",
     "threshold": 0.8,
     "description": "速度祝福"
+  },
+  {
+    "itemName": "hero2_yuyinrumeng_yinji",
+    "imageName": "as_hero2_yuyinrumeng_yinji.png",
+    "roiFront": "91,355,193,42",
+    "roiBack": "48,349,1173,57",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "余音入梦·音迹"
+  },
+  {
+    "itemName": "hero2_shenniaojingxian_zhukong",
+    "imageName": "as_hero2_shenniaojingxian_zhukong.png",
+    "roiFront": "391,355,193,42",
+    "roiBack": "48,349,1173,57",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "神鸟惊弦·逐空"
+  },
+  {
+    "itemName": "hero2_pozhenzouqu_fanyin",
+    "imageName": "as_hero2_pozhenzouqu_fanyin.png",
+    "roiFront": "694,355,193,42",
+    "roiBack": "48,349,1173,57",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "破阵奏曲·泛音"
+  },
+  {
+    "itemName": "hero2_pozhenzouqu_ningxiao",
+    "imageName": "as_hero2_pozhenzouqu_ningxiao.png",
+    "roiFront": "393,355,193,42",
+    "roiBack": "48,349,1173,57",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "破阵奏曲·凝啸"
+  },
+  {
+    "itemName": "hero2_shenniaojingxian_eyun",
+    "imageName": "as_hero2_shenniaojingxian_eyun.png",
+    "roiFront": "695,355,193,42",
+    "roiBack": "48,349,1173,57",
+    "method": "Template matching",
+    "threshold": 0.8,
+    "description": "神鸟惊弦·遏云"
   }
 ]

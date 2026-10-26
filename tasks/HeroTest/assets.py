@@ -84,6 +84,8 @@ class HeroTestAssets:
 	I_HERO_EXP_MAX = RuleImage(roi_front=(175,493,20,20), roi_back=(162,481,106,37), threshold=0.8, method="Template matching", file="./tasks/HeroTest/as/as_hero_exp_max.png")
 	# 真钱 
 	I_REAL_MONEY = RuleImage(roi_front=(536,320,24,30), roi_back=(466,155,530,411), threshold=0.8, method="Template matching", file="./tasks/HeroTest/as/as_real_money.png")
+	# 通过梦墟秘境确认重置按钮 
+	I_MXMJ_RESET_CONFIRM = RuleImage(roi_front=(668,411,172,56), roi_back=(664,402,180,70), threshold=0.8, method="Template matching", file="./tasks/HeroTest/as/as_mxmj_reset_confirm.png")
 
 
 	# Image Rule Assets
@@ -99,6 +101,16 @@ class HeroTestAssets:
 	I_HERO2_SKILL3 = RuleImage(roi_front=(520,358,62,38), roi_back=(41,346,1172,63), threshold=0.8, method="Template matching", file="./tasks/HeroTest/as/as_hero2_skill3.png")
 	# 速度祝福 
 	I_HERO2_SKILL6 = RuleImage(roi_front=(427,356,62,38), roi_back=(48,342,1175,67), threshold=0.8, method="Template matching", file="./tasks/HeroTest/as/as_hero2_skill6.png")
+	# 余音入梦·音迹 
+	I_HERO2_YUYINRUMENG_YINJI = RuleImage(roi_front=(91,355,193,42), roi_back=(48,349,1173,57), threshold=0.8, method="Template matching", file="./tasks/HeroTest/as/as_hero2_yuyinrumeng_yinji.png")
+	# 神鸟惊弦·逐空 
+	I_HERO2_SHENNIAOJINGXIAN_ZHUKONG = RuleImage(roi_front=(391,355,193,42), roi_back=(48,349,1173,57), threshold=0.8, method="Template matching", file="./tasks/HeroTest/as/as_hero2_shenniaojingxian_zhukong.png")
+	# 破阵奏曲·泛音 
+	I_HERO2_POZHENZOUQU_FANYIN = RuleImage(roi_front=(694,355,193,42), roi_back=(48,349,1173,57), threshold=0.8, method="Template matching", file="./tasks/HeroTest/as/as_hero2_pozhenzouqu_fanyin.png")
+	# 破阵奏曲·凝啸 
+	I_HERO2_POZHENZOUQU_NINGXIAO = RuleImage(roi_front=(393,355,193,42), roi_back=(48,349,1173,57), threshold=0.8, method="Template matching", file="./tasks/HeroTest/as/as_hero2_pozhenzouqu_ningxiao.png")
+	# 神鸟惊弦·遏云 
+	I_HERO2_SHENNIAOJINGXIAN_EYUN = RuleImage(roi_front=(695,355,193,42), roi_back=(48,349,1173,57), threshold=0.8, method="Template matching", file="./tasks/HeroTest/as/as_hero2_shenniaojingxian_eyun.png")
 
 
 	# Ocr Rule Assets
