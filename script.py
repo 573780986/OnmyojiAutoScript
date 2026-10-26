@@ -352,15 +352,27 @@ class Script:
                 del_cached_property(self, "config")
 
     def _no_more_task_today(self) -> bool:
-        """今天已无任务可跑：队列为空，或所有 next_run 都已跨过本地明日 0 点。"""
+        """今天已无任务可跑：没有过期未跑的任务，且剩余任务都排在本地明日 0 点之后。"""
         del_cached_property(self, 'config')
-        self.config.get_next()  # 触发 update_scheduler 刷新 pending_task / waiting_task
-        tasks = list(self.config.pending_task[1:]) + list(self.config.waiting_task)
-        if not tasks:
-            return True
+        self.config.update_scheduler()
+        pending = [t.command for t in self.config.pending_task]
+        if pending:
+            logger.info(f'Task pending, continue running: {pending}')
+            return False
         tomorrow_start = (datetime.now() + timedelta(days=1)).replace(
             hour=0, minute=0, second=0, microsecond=0)
-        return all(t.next_run >= tomorrow_start for t in tasks)
+        today = [t.command for t in self.config.waiting_task if t.next_run < tomorrow_start]
+        if today:
+            logger.info(f'Task scheduled today, continue running: {today}')
+            return False
+        return True
+
+    def _push_final_schedule(self) -> None:
+        """脚本退出前推送一次最新调度快照，前端才不会停留在旧的任务时间上。"""
+        if self.state_queue is None:
+            return
+        self.config.update_scheduler()
+        self.state_queue.put({"schedule": self.config.get_schedule_data()})
 
     def _try_acquire_queue_token(self) -> bool:
         """
@@ -754,6 +766,7 @@ class Script:
                 if (self.config.script.optimization.auto_stop_when_day_done
                         and self._no_more_task_today()):
                     logger.info('No more tasks today, exiting loop per auto_stop_when_day_done')
+                    self._push_final_schedule()
                     if self.state_queue is not None:
                         self.state_queue.put({"state": ScriptState.INACTIVE})
                     return
