@@ -85,8 +85,13 @@ class ScriptProcess(ScriptWSManager):
                     if not data:
                         await sleep(0.5)
                         continue
-                    if 'state' in data and data['state'] == ScriptState.WARNING:
-                        self.state = ScriptState.WARNING
+                    if 'state' in data:
+                        if data['state'] == ScriptState.WARNING:
+                            self.state = ScriptState.WARNING
+                        elif data['state'] == ScriptState.INACTIVE:
+                            # 子进程自己结束时父进程状态要跟着落地，否则前端重连拿到的是
+                            # 陈旧的 RUNNING，闲置期的 schedule 刷新也不会启动
+                            self.state = ScriptState.INACTIVE
                     # 顺手缓存子进程推上来的 running，供配置变更推送 schedule 时复用。
                     if isinstance(data, dict) and isinstance(data.get('schedule'), dict):
                         running = data['schedule'].get('running')
@@ -108,6 +113,12 @@ class ScriptProcess(ScriptWSManager):
         try:
             while 1:
                 if self.state == ScriptState.INACTIVE:
+                    # 脚本已停，但管道里可能还压着退出前的日志，先读完再空转
+                    try:
+                        while self.log_pipe_out.poll():
+                            await self.broadcast_log(self.log_pipe_out.recv())
+                    except EOFError as e:
+                        logger.warning(f'EOFError: {e}')
                     await sleep(1)
                     continue
                 await sleep(0.05)
